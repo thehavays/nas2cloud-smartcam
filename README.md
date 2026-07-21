@@ -20,9 +20,9 @@ This will start the Samba NAS, the Sync script, and our Auth Server!
 3. Paste those keys into the form on the right and click **Connect Google Drive**.
 4. You will be redirected to the Google login screen. Log in and click "Allow".
 5. It will redirect you back to a Success page. 
-6. **Important:** Restart the `rclone-sync` container so it picks up the new credentials:
+6. **Important:** Restart the container so it picks up the new credentials:
    ```bash
-   docker compose restart rclone-sync
+   docker compose restart xiaomi-sync
    ```
 
 ## 3. Connect the Camera
