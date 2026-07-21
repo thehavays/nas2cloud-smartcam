@@ -115,7 +115,7 @@ token = ${rcloneToken}
         const settingsPath = path.join(__dirname, 'rclone', 'settings.env');
         fs.mkdirSync(path.dirname(rclonePath), { recursive: true });
         fs.writeFileSync(rclonePath, configContent, 'utf8');
-        fs.writeFileSync(settingsPath, \`LOCAL_RETENTION_DAYS=\${storedLocalRetention}\\nREMOTE_RETENTION_DAYS=\${storedRemoteRetention}\\n\`, 'utf8');
+        fs.writeFileSync(settingsPath, `LOCAL_RETENTION_DAYS=${storedLocalRetention}\nREMOTE_RETENTION_DAYS=${storedRemoteRetention}\n`, 'utf8');
 
         res.send(`
             <html>
