@@ -1,0 +1,133 @@
+const express = require('express');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+app.use(express.urlencoded({ extended: true }));
+
+let storedClientId = '';
+let storedClientSecret = '';
+const REDIRECT_URI = 'http://127.0.0.1:8080/callback';
+
+app.get('/', (req, res) => {
+    const rclonePath = path.join(__dirname, 'rclone', 'rclone.conf');
+    let isConfigured = false;
+    if (fs.existsSync(rclonePath)) {
+        const content = fs.readFileSync(rclonePath, 'utf8');
+        if (content.includes('[gdrive]')) isConfigured = true;
+    }
+
+    res.send(`
+        <html>
+        <head>
+            <title>Xiaomi Camera Drive Sync - Setup</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #333; }
+                input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+                button { background: #4285f4; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 4px; font-size: 16px; width: 100%; font-weight: bold; }
+                button:hover { background: #3367d6; }
+                .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #c3e6cb; }
+                .card { background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; }
+            </style>
+        </head>
+        <body>
+            <h2>Google Drive Authentication</h2>
+            ${isConfigured ? '<div class="success">✅ Google Drive is already connected! You can close this page.</div>' : ''}
+            
+            <div class="card">
+                <p>Enter your Google Cloud OAuth Client ID and Secret to securely connect your Google Drive.</p>
+                <form action="/login" method="POST">
+                    <label><b>Client ID:</b></label>
+                    <input type="text" name="clientId" required placeholder="e.g. 123456789-abc.apps.googleusercontent.com">
+                    
+                    <label><b>Client Secret:</b></label>
+                    <input type="password" name="clientSecret" required placeholder="e.g. GOCSPX-123456789">
+                    
+                    <button type="submit">Connect Google Drive</button>
+                </form>
+            </div>
+            
+            <p><small><b>Need keys?</b> Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> &rarr; Create Project &rarr; <b>Enable "Google Drive API"</b> &rarr; Credentials &rarr; Create OAuth Client ID (Desktop App).</small></p>
+        </body>
+        </html>
+    `);
+});
+
+app.post('/login', (req, res) => {
+    storedClientId = req.body.clientId.trim();
+    storedClientSecret = req.body.clientSecret.trim();
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+        `client_id=${storedClientId}&` +
+        `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+        `response_type=code&` +
+        `scope=https://www.googleapis.com/auth/drive&` +
+        `access_type=offline&` +
+        `prompt=consent`;
+
+    res.redirect(authUrl);
+});
+
+app.get('/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) return res.send('Error: No authorization code provided.');
+    if (!storedClientId || !storedClientSecret) return res.send('Error: Session lost. Please go back and try again.');
+
+    try {
+        const response = await axios.post('https://oauth2.googleapis.com/token', {
+            code: code,
+            client_id: storedClientId,
+            client_secret: storedClientSecret,
+            redirect_uri: REDIRECT_URI,
+            grant_type: 'authorization_code'
+        });
+
+        const tokenData = response.data;
+        const rcloneToken = JSON.stringify({
+            access_token: tokenData.access_token,
+            token_type: "Bearer",
+            refresh_token: tokenData.refresh_token,
+            expiry: new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+        });
+
+        const configContent = `[gdrive]
+type = drive
+scope = drive
+client_id = ${storedClientId}
+client_secret = ${storedClientSecret}
+token = ${rcloneToken}
+`;
+
+        const rclonePath = path.join(__dirname, 'rclone', 'rclone.conf');
+        fs.mkdirSync(path.dirname(rclonePath), { recursive: true });
+        fs.writeFileSync(rclonePath, configContent, 'utf8');
+
+        res.send(`
+            <html>
+            <head>
+                <style>
+                    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #333; text-align: center; }
+                    .success { background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; }
+                </style>
+            </head>
+            <body>
+                <div class="success">
+                    <h2>🎉 Success!</h2>
+                    <p>Google Drive has been securely connected and your configuration has been saved.</p>
+                </div>
+                <p>You can now safely close this window.</p>
+                <p><i>Note: Please restart your docker-compose environment to apply the new configuration.</i></p>
+            </body>
+            </html>
+        `);
+
+    } catch (err) {
+        console.error(err.response ? err.response.data : err.message);
+        res.send(`<h2>Error fetching tokens</h2><pre>${JSON.stringify(err.response ? err.response.data : err.message, null, 2)}</pre>`);
+    }
+});
+
+app.listen(8080, '0.0.0.0', () => {
+    console.log('Auth server listening on http://0.0.0.0:8080');
+});

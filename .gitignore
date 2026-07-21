@@ -1,0 +1,12 @@
+# Ignore synced camera data
+data/
+
+# Ignore rclone configuration containing sensitive tokens
+rclone/
+
+# Ignore Node.js dependencies
+auth-server/node_modules/
+
+# Ignore environment files
+.env
+*.env

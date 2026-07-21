@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  samba:
+    image: dperson/samba
+    container_name: samba
+    environment:
+      - USERID=1000
+      - GROUPID=1000
+      - TZ=UTC
+    network_mode: "host"
+    volumes:
+      - ./data:/mnt/data
+    command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'
+    restart: unless-stopped
+
+  rclone-sync:
+    image: rclone/rclone:latest
+    container_name: rclone-sync
+    volumes:
+      - ./rclone:/config/rclone
+      - ./data:/data:ro
+      - ./sync.sh:/sync.sh:ro
+    entrypoint: /bin/sh
+    command: /sync.sh
+    restart: unless-stopped
+    depends_on:
+      - samba
+
+  auth-server:
+    build: ./auth-server
+    container_name: auth-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./rclone:/app/rclone
+    restart: unless-stopped
