@@ -6,12 +6,36 @@ To make setup as easy as possible, we have built a beautiful web interface to ha
 
 ## 1. Start the Environment
 
-In your terminal, navigate to the `xiaomi-camera-drive-sync` directory and run:
+### Option A: Use Pre-built Image (Recommended)
+You do not need to download this repository! Just create a `docker-compose.yml` file anywhere on your computer with the following contents:
 
+```yaml
+services:
+  xiaomi-sync:
+    image: ghcr.io/thehavays/xiaomi-camera-drive-sync:latest
+    container_name: xiaomi-sync
+    environment:
+      - USERID=1000
+      - GROUPID=1000
+      - TZ=UTC
+    network_mode: "host"
+    volumes:
+      - ./data:/mnt/data
+    command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'
+    restart: unless-stopped
+```
+Then, in the same folder as the file, run:
+```bash
+docker compose up -d
+```
+
+### Option B: Build from Source (Local Development)
+If you want to modify the code yourself, clone this repository, open a terminal in the folder, and run:
 ```bash
 docker compose up -d --build
 ```
-This will start the Samba NAS, the Sync script, and our Auth Server!
+
+*(This will start the Samba NAS, the Sync script, and our Auth Server!)*
 
 ## 2. Authenticate with Google Drive via Web UI
 
