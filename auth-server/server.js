@@ -8,6 +8,8 @@ app.use(express.urlencoded({ extended: true }));
 
 let storedClientId = '';
 let storedClientSecret = '';
+let storedLocalRetention = '7';
+let storedRemoteRetention = '30';
 const REDIRECT_URI = 'http://127.0.0.1:8080/callback';
 
 app.get('/', (req, res) => {
@@ -44,7 +46,15 @@ app.get('/', (req, res) => {
                     <label><b>Client Secret:</b></label>
                     <input type="password" name="clientSecret" required placeholder="e.g. GOCSPX-123456789">
                     
-                    <button type="submit">Connect Google Drive</button>
+                    <label><b>Local Retention (Days):</b></label>
+                    <input type="number" name="localRetention" required value="7" min="1">
+                    <small style="display:block;margin-top:-10px;margin-bottom:15px;color:#666;">How long to keep videos on your local PC before deleting.</small>
+
+                    <label><b>Google Drive Retention (Days):</b></label>
+                    <input type="number" name="remoteRetention" required value="30" min="1">
+                    <small style="display:block;margin-top:-10px;margin-bottom:15px;color:#666;">How long to keep videos on Google Drive before deleting.</small>
+                    
+                    <button type="submit">Save & Connect Google Drive</button>
                 </form>
             </div>
             
@@ -57,6 +67,8 @@ app.get('/', (req, res) => {
 app.post('/login', (req, res) => {
     storedClientId = req.body.clientId.trim();
     storedClientSecret = req.body.clientSecret.trim();
+    storedLocalRetention = req.body.localRetention || '7';
+    storedRemoteRetention = req.body.remoteRetention || '30';
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
         `client_id=${storedClientId}&` +
@@ -100,8 +112,10 @@ token = ${rcloneToken}
 `;
 
         const rclonePath = path.join(__dirname, 'rclone', 'rclone.conf');
+        const settingsPath = path.join(__dirname, 'rclone', 'settings.env');
         fs.mkdirSync(path.dirname(rclonePath), { recursive: true });
         fs.writeFileSync(rclonePath, configContent, 'utf8');
+        fs.writeFileSync(settingsPath, \`LOCAL_RETENTION_DAYS=\${storedLocalRetention}\\nREMOTE_RETENTION_DAYS=\${storedRemoteRetention}\\n\`, 'utf8');
 
         res.send(`
             <html>

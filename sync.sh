@@ -13,6 +13,10 @@ echo "Local retention: $LOCAL_RETENTION_DAYS days."
 echo "Remote retention: $REMOTE_RETENTION_DAYS days."
 
 while true; do
+  if [ -f /app/rclone/settings.env ]; then
+    source /app/rclone/settings.env
+  fi
+
   echo "[$(date)] Starting sync..."
   
   # 1. Copy new files to Google Drive
