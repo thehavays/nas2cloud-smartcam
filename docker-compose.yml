@@ -4,11 +4,19 @@ services:
   xiaomi-sync:
     build: .
     container_name: xiaomi-sync
+    ports:
+      - "445:445"
+      - "139:139"
+      - "8080:8080"
+      - "137:137/udp"
+      - "138:138/udp"
     environment:
       - USERID=1000
       - GROUPID=1000
       - TZ=UTC
-    network_mode: "host"
+      - SYNC_INTERVAL=3600
+      - LOCAL_RETENTION_DAYS=7
+      - REMOTE_RETENTION_DAYS=30
     volumes:
       - ./data:/mnt/data
     command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'

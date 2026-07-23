@@ -1,62 +1,105 @@
 # Xiaomi Camera to Google Drive Sync
 
-Welcome to the Xiaomi Camera to Google Drive Sync project! This tool allows your Xiaomi security camera (which usually requires a paid cloud subscription or a dedicated NAS) to backup its videos completely for free to your personal Google Drive. 
+Welcome to the **Xiaomi Camera to Google Drive Sync** project! This tool allows your Xiaomi security camera (which usually requires a paid cloud subscription or a dedicated NAS) to backup its recordings completely for free to your personal Google Drive. 
 
-To make setup as easy as possible, we have built a beautiful web interface to handle Google Drive authentication for you. No terminal commands required!
+To make setup as easy as possible, a web interface is included to handle Google Drive authentication for you. No complex terminal commands required!
 
-## 1. Start the Environment
+---
 
-### Option A: Use Pre-built Image (Recommended)
-You do not need to download this repository! Just create a `docker-compose.yml` file anywhere on your computer with the following contents:
+## 🌟 How It Works
+
+* **Full Continuous Recording:** Unlike Xiaomi's free cloud (which only saves 10-15s motion clips), NAS storage backs up **full, continuous video recordings** (split into ~1-hour MP4 files of ~130MB each).
+* **Buffer & Loop Recording:** Your camera records to its local MicroSD card first, then streams files to your PC's Docker NAS in real-time. Even when the SD card overwrites old files, your PC and Google Drive backups remain safe.
+* **Auto Cleanup:** Keeps your local PC storage and Google Drive clean by automatically purging files older than your configured retention policy.
+
+---
+
+## 1. Start the Environment (Cross-Platform: Linux, macOS, Windows)
+
+Create a `docker-compose.yml` file anywhere on your computer (Ubuntu, macOS, or Windows):
 
 ```yaml
 services:
   xiaomi-sync:
     image: ghcr.io/thehavays/xiaomi-camera-drive-sync:latest
     container_name: xiaomi-sync
+    ports:
+      - "445:445"
+      - "139:139"
+      - "8080:8080"
+      - "137:137/udp"
+      - "138:138/udp"
     environment:
       - USERID=1000
       - GROUPID=1000
       - TZ=UTC
-    network_mode: "host"
+      - SYNC_INTERVAL=3600          # Sync every 1 hour (in seconds)
+      - LOCAL_RETENTION_DAYS=7       # Delete local files older than 7 days
+      - REMOTE_RETENTION_DAYS=30     # Delete Google Drive files older than 30 days
     volumes:
       - ./data:/mnt/data
     command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'
     restart: unless-stopped
 ```
-Then, in the same folder as the file, run:
+
+Then run:
 ```bash
 docker compose up -d
 ```
 
-### Option B: Build from Source (Local Development)
-If you want to modify the code yourself, clone this repository, open a terminal in the folder, and run:
-```bash
-docker compose up -d --build
-```
+> 💡 **Tip:** 
+> * **On Linux/Ubuntu:** If you want automatic NetBIOS network broadcast discovery without entering IP addresses manually, you can optionally replace `ports:` with `network_mode: "host"`.
+> * **On macOS:** Make sure **macOS File Sharing** (*System Settings > General > Sharing > File Sharing*) is turned OFF to prevent port `445` conflicts.
 
-*(This will start the Samba NAS, the Sync script, and our Auth Server!)*
+---
 
 ## 2. Authenticate with Google Drive via Web UI
 
 1. Open your web browser and go to: **[http://127.0.0.1:8080](http://127.0.0.1:8080)**
-2. The left side of the page provides instructions on how to generate your own Google Cloud **Client ID** and **Client Secret**. (This takes about 3 minutes and ensures you never hit Google's rate limits).
-3. Paste those keys into the form on the right and click **Connect Google Drive**.
-4. You will be redirected to the Google login screen. Log in and click "Allow".
-5. It will redirect you back to a Success page. 
-6. **Important:** Restart the container so it picks up the new credentials:
+2. Follow the step-by-step instructions on the page to create your Google Cloud **Client ID** and **Client Secret** (takes ~3 minutes).
+3. Enter your keys into the web form and click **Connect Google Drive**.
+4. Authorize with your Google Account when prompted.
+5. After seeing the success screen, **restart the container** to apply the new credentials:
    ```bash
    docker compose restart xiaomi-sync
    ```
 
-## 3. Connect the Camera
+---
 
-1. Open your **Mi Home app**.
-2. Go to your camera settings -> **Storage Management** -> **NAS network storage**.
-3. It will scan your local network and should find a device (likely named `xiaominas` or your host PC's IP address).
-4. Tap it and enter the credentials we set up:
-   - **Username:** `camera`
-   - **Password:** `camera123`
-5. It should connect successfully and show the `xiaomi_nas` folder. Select it.
+## 3. Connect the Xiaomi Camera
 
-The camera will now automatically save recordings to the Docker NAS. Periodically (every hour by default), the `rclone-sync` container will wake up and securely copy these files up to a folder named `XiaomiCameraBackup` in your Google Drive!
+1. Open the **Mi Home app**.
+2. Navigate to your camera: **Settings (⋮)** -> **Storage Management** -> **NAS network storage**.
+3. Select your device from the list (usually named `xiaominas` or your host PC/Mac IP address).
+   * *If `xiaominas` is not discovered automatically, enter your host IP address manually (e.g., `192.168.1.50`).*
+4. Enter the SMB credentials:
+   * **Username:** `camera`
+   * **Password:** `camera123`
+5. Select the **`xiaomi_nas`** folder and ensure:
+   * **Transmission status:** `Transmission is normal`
+   * **Transfer time:** `Immediately`
+
+The camera will now automatically stream recordings to your local Docker NAS, and the sync engine will periodically upload them to the `XiaomiCameraBackup` folder in your Google Drive! 🚀
+
+---
+
+## 🔍 Verification & Troubleshooting
+
+### Check Active Camera Connection
+To verify if your Xiaomi camera is actively connected and transferring files:
+```bash
+docker exec xiaomi-sync smbstatus
+```
+
+### Check Google Drive Sync Logs
+To view real-time sync activity and upload progress:
+```bash
+docker logs -f xiaomi-sync
+```
+
+### Environment Variables Reference
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `SYNC_INTERVAL` | `3600` | Sync frequency in seconds (default: 1 hour). |
+| `LOCAL_RETENTION_DAYS` | `7` | Days to keep video files on local PC disk before auto-delete. |
+| `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
