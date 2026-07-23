@@ -38,7 +38,7 @@ services:
       - LOCAL_RETENTION_DAYS=7       # Delete local files older than 7 days
       - REMOTE_RETENTION_DAYS=30     # Delete Google Drive files older than 30 days
       # --- Motion Detection (optional) ---
-      - MOTION_DETECTION=false       # Set to 'true' to enable
+      - MOTION_DETECTION=true        # Set to 'false' to disable
       - MOTION_SENSITIVITY=0.02      # Scene change threshold (0.01=sensitive, 0.10=lenient)
       - MOTION_CLIP_BUFFER=15        # Seconds added before/after each motion event
       - MOTION_CHECK_INTERVAL=600    # How often to scan for motion (seconds, default: 10 min)
@@ -144,7 +144,7 @@ Because the active file is snapshotted every 10 minutes, you'll see motion clips
 | `LOCAL_RETENTION_DAYS` | `7` | Days to keep video files on local PC disk before auto-delete. |
 | `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
 | `REMOTE_PATH` | `XiaomiCameraBackup` | Destination folder path on Google Drive. |
-| `MOTION_DETECTION` | `false` | Set to `true` to enable motion clip extraction. |
+| `MOTION_DETECTION` | `true` | Set to `false` to disable motion clip extraction. |
 | `MOTION_SENSITIVITY` | `0.02` | FFmpeg scene change threshold (lower = more sensitive). |
 | `MOTION_CLIP_BUFFER` | `15` | Seconds added before/after each detected motion event. |
 | `MOTION_CHECK_INTERVAL` | `600` | How often (in seconds) to scan recordings for motion. |
