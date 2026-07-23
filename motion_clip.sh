@@ -8,6 +8,7 @@
 DATA_DIR="/mnt/data"
 MOTION_DIR="$DATA_DIR/MotionClips"
 PROCESSED_LOG="$DATA_DIR/.motion_processed.log"
+EVENTS_LOG="$DATA_DIR/motion_events.log"
 SENSITIVITY="${MOTION_SENSITIVITY:-0.02}"    # Scene change threshold (0.01=sensitive, 0.10=lenient)
 BUFFER="${MOTION_CLIP_BUFFER:-15}"           # Seconds to add before/after motion event
 SNAPSHOT="/tmp/active_snapshot.mp4"
@@ -15,13 +16,21 @@ TIMESTAMPS_FILE="/tmp/motion_times.txt"
 
 mkdir -p "$MOTION_DIR"
 touch "$PROCESSED_LOG"
+touch "$EVENTS_LOG"
+
+# Helper: write to both stdout and the persistent events log
+log() {
+  MSG="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+  echo "$MSG"
+  echo "$MSG" >> "$EVENTS_LOG"
+}
 
 # ── Step 1: Snapshot the active (currently written) file ─────────────────────
 # Detect which file is locked by Samba (camera is still writing to it)
 ACTIVE_FILE=$(smbstatus -L 2>/dev/null | grep -oE '[^ ]+\.mp4' | head -1)
 
 if [ -n "$ACTIVE_FILE" ] && [ -f "/mnt/data/$ACTIVE_FILE" ]; then
-  echo "[motion] Snapshotting active file: $ACTIVE_FILE"
+  log "SNAPSHOT   $ACTIVE_FILE"
   # Copy the already-written portion safely without waiting for the file to close
   ffmpeg -y -i "/mnt/data/$ACTIVE_FILE" -c copy "$SNAPSHOT" -loglevel error 2>/dev/null || true
 else
@@ -35,12 +44,14 @@ for VIDEO in "$DATA_DIR"/XiaomiCamera_*/*.mp4 "$SNAPSHOT"; do
   IS_SNAPSHOT=false
   [ "$VIDEO" = "$SNAPSHOT" ] && IS_SNAPSHOT=true
 
+  BASENAME=$(basename "$VIDEO")
+
   # Skip completed files that were already processed
   if [ "$IS_SNAPSHOT" = false ]; then
     grep -qF "$VIDEO" "$PROCESSED_LOG" && continue
   fi
 
-  echo "[motion] Analyzing: $(basename $VIDEO)"
+  log "ANALYZING  $BASENAME"
 
   # ── Step 3: Detect scene changes (motion events) with FFmpeg ─────────────
   > "$TIMESTAMPS_FILE"
@@ -52,44 +63,47 @@ for VIDEO in "$DATA_DIR"/XiaomiCamera_*/*.mp4 "$SNAPSHOT"; do
     sed "s/.*pts_time:\([0-9.]*\).*/\1/" > "$TIMESTAMPS_FILE" || true
 
   if [ ! -s "$TIMESTAMPS_FILE" ]; then
-    echo "[motion] No motion detected in $(basename $VIDEO)"
-    # Mark completed files as processed even if no motion found
+    log "NO_MOTION  $BASENAME"
     [ "$IS_SNAPSHOT" = false ] && echo "$VIDEO" >> "$PROCESSED_LOG"
     continue
   fi
 
   # ── Step 4: Merge nearby events and cut clips ─────────────────────────────
-  # Get video duration
   DURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$VIDEO" 2>/dev/null || echo "0")
   CLIP_DATE=$(date +%Y-%m-%d)
   mkdir -p "$MOTION_DIR/$CLIP_DATE"
 
+  CLIP_COUNT=0
   LAST_CLIP_END="-999"
+
   while IFS= read -r TS; do
-    # Skip if this event is within the buffer zone of the last clip (avoid overlapping clips)
-    [ "$(echo "$TS < $LAST_CLIP_END" | awk '{print ($1 < $3)}')" = "1" ] 2>/dev/null && continue || true
+    # Skip if this event falls within the buffer zone of the last clip
+    WITHIN=$(awk "BEGIN{print ($TS < $LAST_CLIP_END) ? 1 : 0}")
+    [ "$WITHIN" = "1" ] && continue
 
     START=$(awk "BEGIN {s=$TS-$BUFFER; print (s<0)?0:s}")
-    CLIP_DURATION=$(awk "BEGIN {print $BUFFER*2 + 10}")  # buffer*2 + a little extra
+    CLIP_DURATION=$(awk "BEGIN {print $BUFFER*2 + 10}")
 
-    # Ensure start doesn't exceed video duration
-    [ "$(awk "BEGIN{print ($START >= $DURATION)}")" = "1" ] && continue || true
+    # Skip if start exceeds video duration
+    EXCEEDS=$(awk "BEGIN{print ($START >= $DURATION) ? 1 : 0}")
+    [ "$EXCEEDS" = "1" ] && continue
 
-    TS_LABEL=$(date -d "1970-01-01 UTC + ${TS} seconds" +%H-%M-%S 2>/dev/null || date -u -d @${TS%.*} +%H-%M-%S 2>/dev/null || echo "${TS%.*}")
+    TS_LABEL=$(date -u -d "@${TS%.*}" +%H-%M-%S 2>/dev/null || printf "%06d" "${TS%.*}")
     OUT_FILE="$MOTION_DIR/$CLIP_DATE/${TS_LABEL}.mp4"
 
-    echo "[motion] Cutting clip at ${TS}s → $(basename $OUT_FILE)"
+    log "MOTION     t=${TS}s → MotionClips/$CLIP_DATE/${TS_LABEL}.mp4"
     ffmpeg -y -ss "$START" -i "$VIDEO" -t "$CLIP_DURATION" \
       -c copy -avoid_negative_ts make_zero \
       "$OUT_FILE" -loglevel error 2>/dev/null || true
 
     LAST_CLIP_END=$(awk "BEGIN{print $START + $CLIP_DURATION}")
+    CLIP_COUNT=$((CLIP_COUNT + 1))
   done < "$TIMESTAMPS_FILE"
 
-  echo "[motion] Done: $(basename $VIDEO)"
+  log "DONE       $BASENAME ($CLIP_COUNT clip(s))"
 
   # Mark completed files as processed (never re-process)
   [ "$IS_SNAPSHOT" = false ] && echo "$VIDEO" >> "$PROCESSED_LOG"
 done
 
-echo "[motion] Scan complete."
+log "SCAN_COMPLETE ---"
