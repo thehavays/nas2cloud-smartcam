@@ -1,7 +1,7 @@
 FROM dperson/samba
 
-# Install required packages (Node.js, npm, curl, unzip)
-RUN apk add --no-cache nodejs npm curl unzip
+# Install required packages (Node.js, npm, curl, unzip, ffmpeg)
+RUN apk add --no-cache nodejs npm curl unzip ffmpeg
 
 # Install Rclone
 RUN curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip && \
@@ -22,6 +22,10 @@ COPY auth-server/server.js .
 # Copy Sync Script
 COPY sync.sh /app/sync.sh
 RUN chmod +x /app/sync.sh
+
+# Copy Motion Detection Script
+COPY motion_clip.sh /app/motion_clip.sh
+RUN chmod +x /app/motion_clip.sh
 
 # Copy Entrypoint Script
 COPY entrypoint.sh /app/entrypoint.sh

@@ -18,6 +18,10 @@ services:
       - LOCAL_RETENTION_DAYS=7
       - REMOTE_RETENTION_DAYS=30
       - REMOTE_PATH=${REMOTE_PATH:-XiaomiCameraBackup}
+      - MOTION_DETECTION=${MOTION_DETECTION:-false}
+      - MOTION_SENSITIVITY=${MOTION_SENSITIVITY:-0.02}
+      - MOTION_CLIP_BUFFER=${MOTION_CLIP_BUFFER:-15}
+      - MOTION_CHECK_INTERVAL=${MOTION_CHECK_INTERVAL:-600}
     volumes:
       - ./data:/mnt/data
       - ./rclone:/app/rclone

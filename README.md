@@ -11,6 +11,7 @@ To make setup as easy as possible, a web interface is included to handle Google 
 * **Full Continuous Recording:** Unlike Xiaomi's free cloud (which only saves 10-15s motion clips), NAS storage backs up **full, continuous video recordings** (split into ~1-hour MP4 files of ~130MB each).
 * **Buffer & Loop Recording:** Your camera records to its local MicroSD card first, then streams files to your PC's Docker NAS in real-time. Even when the SD card overwrites old files, your PC and Google Drive backups remain safe.
 * **Auto Cleanup:** Keeps your local PC storage and Google Drive clean by automatically purging files older than your configured retention policy.
+* **Motion Clip Extraction *(optional)*:** Scans completed and in-progress recordings with FFmpeg and automatically cuts short clips (±15s around each motion event) — no Xiaomi Cloud subscription needed.
 
 ---
 
@@ -36,6 +37,11 @@ services:
       - SYNC_INTERVAL=3600          # Sync every 1 hour (in seconds)
       - LOCAL_RETENTION_DAYS=7       # Delete local files older than 7 days
       - REMOTE_RETENTION_DAYS=30     # Delete Google Drive files older than 30 days
+      # --- Motion Detection (optional) ---
+      - MOTION_DETECTION=false       # Set to 'true' to enable
+      - MOTION_SENSITIVITY=0.02      # Scene change threshold (0.01=sensitive, 0.10=lenient)
+      - MOTION_CLIP_BUFFER=15        # Seconds added before/after each motion event
+      - MOTION_CHECK_INTERVAL=600    # How often to scan for motion (seconds, default: 10 min)
     volumes:
       - ./data:/mnt/data
       - ./rclone:/app/rclone
@@ -98,10 +104,47 @@ To view real-time sync activity and upload progress:
 docker logs -f xiaomi-sync
 ```
 
-### Environment Variables Reference
+---
+
+## 🎯 Motion Detection (Optional)
+
+Enable automatic motion clip extraction to get short clips around motion events — without paying for Xiaomi Cloud.
+
+Set `MOTION_DETECTION=true` in your environment or `.env` file:
+```env
+MOTION_DETECTION=true
+MOTION_SENSITIVITY=0.02
+MOTION_CLIP_BUFFER=15
+MOTION_CHECK_INTERVAL=600
+```
+
+### How It Works
+1. Every **10 minutes** (configurable), `motion_clip.sh` runs inside the container.
+2. It detects scene changes in **completed** recordings (processed once, then skipped forever) and the **active** recording (always re-checked with a fresh snapshot).
+3. A short clip of **±15 seconds** around each motion event is cut and saved to `./data/MotionClips/YYYY-MM-DD/`.
+4. On the next hourly sync, clips are uploaded to **`gdrive:XiaomiCameraBackup/MotionClips/`**.
+
+### Maximum Latency
+Because the active file is snapshotted every 10 minutes, you'll see motion clips in Drive **within ~10 minutes** of the event.
+
+### Tuning Sensitivity
+| `MOTION_SENSITIVITY` | Behaviour |
+| :--- | :--- |
+| `0.01` | Very sensitive — flags minor lighting changes |
+| `0.02` | Balanced *(recommended)* |
+| `0.05` | Only large movements (people walking in front of camera) |
+| `0.10` | Coarse — only extreme changes |
+
+---
+
+## 🔧 Environment Variables Reference
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `SYNC_INTERVAL` | `3600` | Sync frequency in seconds (default: 1 hour). |
 | `LOCAL_RETENTION_DAYS` | `7` | Days to keep video files on local PC disk before auto-delete. |
 | `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
-| `REMOTE_PATH` | `XiaomiCameraBackup` | Destination folder path on Google Drive (e.g. `SharedFolder/XiaomiCameraBackup` or set in `.env`). |
+| `REMOTE_PATH` | `XiaomiCameraBackup` | Destination folder path on Google Drive. |
+| `MOTION_DETECTION` | `false` | Set to `true` to enable motion clip extraction. |
+| `MOTION_SENSITIVITY` | `0.02` | FFmpeg scene change threshold (lower = more sensitive). |
+| `MOTION_CLIP_BUFFER` | `15` | Seconds added before/after each detected motion event. |
+| `MOTION_CHECK_INTERVAL` | `600` | How often (in seconds) to scan recordings for motion. |
