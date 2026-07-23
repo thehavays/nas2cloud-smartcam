@@ -94,7 +94,7 @@ for VIDEO in "$DATA_DIR"/XiaomiCamera_*/*.mp4 "$SNAPSHOT"; do
     OUT_FILE="$MOTION_DIR/$CLIP_DATE/${TS_LABEL}.mp4"
 
     log "MOTION     t=${TS}s → MotionClips/$CLIP_DATE/${TS_LABEL}.mp4"
-    ffmpeg -y -ss "$START" -i "$VIDEO" -t "$CLIP_DURATION" \
+    ffmpeg -y -i "$VIDEO" -ss "$START" -t "$CLIP_DURATION" \
       -c copy -avoid_negative_ts make_zero \
       "$OUT_FILE" -loglevel error 2>/dev/null || true
 
