@@ -38,6 +38,7 @@ services:
       - REMOTE_RETENTION_DAYS=30     # Delete Google Drive files older than 30 days
     volumes:
       - ./data:/mnt/data
+      - ./rclone:/app/rclone
     command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'
     restart: unless-stopped
 ```
