@@ -103,3 +103,4 @@ docker logs -f xiaomi-sync
 | `SYNC_INTERVAL` | `3600` | Sync frequency in seconds (default: 1 hour). |
 | `LOCAL_RETENTION_DAYS` | `7` | Days to keep video files on local PC disk before auto-delete. |
 | `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
+| `REMOTE_PATH` | `XiaomiCameraBackup` | Destination folder path on Google Drive (e.g. `Dilo - Eray Ortak Klasör/XiaomiCameraBackup`). |

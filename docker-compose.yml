@@ -17,7 +17,9 @@ services:
       - SYNC_INTERVAL=3600
       - LOCAL_RETENTION_DAYS=7
       - REMOTE_RETENTION_DAYS=30
+      - REMOTE_PATH=Dilo - Eray Ortak Klasör/XiaomiCameraBackup
     volumes:
       - ./data:/mnt/data
+      - ./rclone:/app/rclone
     command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'
     restart: unless-stopped
