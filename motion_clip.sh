@@ -53,10 +53,12 @@ for VIDEO in "$DATA_DIR"/XiaomiCamera_*/*.mp4 "$SNAPSHOT"; do
 
   log "ANALYZING  $BASENAME"
 
-  # ── Step 3: Detect scene changes (motion events) with FFmpeg ─────────────
+  # ── Step 3: Detect scene changes with FFmpeg (1 fps sampling for speed) ─────
+  # Sampling at 1 frame/sec + small scale: ~30x faster than full decode
+  # 1-hour video: ~3600 frames instead of ~108,000 → ~30-60 seconds per file
   > "$TIMESTAMPS_FILE"
   ffmpeg -y -i "$VIDEO" \
-    -vf "select='gt(scene,$SENSITIVITY)',showinfo" \
+    -vf "fps=1,scale=320:180,select='gt(scene,$SENSITIVITY)',showinfo" \
     -vsync vfr \
     -an -f null - 2>&1 | \
     grep "pts_time" | \
