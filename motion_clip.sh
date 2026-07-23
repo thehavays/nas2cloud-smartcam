@@ -72,7 +72,9 @@ for VIDEO in "$DATA_DIR"/XiaomiCamera_*/*.mp4 "$SNAPSHOT"; do
 
   # ── Step 4: Merge nearby events and cut clips ─────────────────────────────
   DURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$VIDEO" 2>/dev/null || echo "0")
-  CLIP_DATE=$(date +%Y-%m-%d)
+  # Extract true recording date from video metadata
+  CLIP_DATE=$(ffprobe -v error -show_entries format_tags=creation_time -of default=noprint_wrappers=1:nokey=1 "$VIDEO" 2>/dev/null | cut -dT -f1)
+  [ -z "$CLIP_DATE" ] && CLIP_DATE=$(date +%Y-%m-%d)
   mkdir -p "$MOTION_DIR/$CLIP_DATE"
 
   CLIP_COUNT=0
