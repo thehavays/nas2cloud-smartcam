@@ -38,7 +38,9 @@ else
 fi
 
 # ── Step 2: Process all candidate files ──────────────────────────────────────
-for VIDEO in "$DATA_DIR"/XiaomiCamera_*/*.mp4 "$SNAPSHOT"; do
+# Find all mp4 files in subdirectories (any camera brand) and the snapshot
+for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
+  # Skip if it doesn't exist (e.g. glob failed to match)
   [ -f "$VIDEO" ] || continue
 
   IS_SNAPSHOT=false
