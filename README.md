@@ -39,7 +39,7 @@ services:
       - REMOTE_PATH=${REMOTE_PATH:-Nas2CloudBackup}     # Target path on Google Drive
       # --- Motion Detection (optional) ---
       - MOTION_DETECTION=true        # Set to 'false' to disable
-      - MOTION_SENSITIVITY=0.02      # Scene change threshold (0.01=sensitive, 0.10=lenient)
+      - MOTION_SENSITIVITY=0.04      # Scene change threshold (0.01=sensitive, 0.10=lenient)
       - MOTION_CLIP_BUFFER=15        # Seconds added before/after each motion event
       - MOTION_CHECK_INTERVAL=600    # How often to scan for motion (seconds, default: 10 min)
     volumes:
@@ -116,7 +116,7 @@ Enable automatic motion clip extraction to get short clips around motion events 
 Set `MOTION_DETECTION=true` in your environment or `.env` file:
 ```env
 MOTION_DETECTION=true
-MOTION_SENSITIVITY=0.02
+MOTION_SENSITIVITY=0.04
 MOTION_CLIP_BUFFER=15
 MOTION_CHECK_INTERVAL=600
 ```
@@ -134,7 +134,7 @@ Because the active file is snapshotted every 10 minutes, you'll see motion clips
 | `MOTION_SENSITIVITY` | Behaviour |
 | :--- | :--- |
 | `0.01` | Very sensitive — flags minor lighting changes |
-| `0.02` | Balanced *(recommended)* |
+| `0.04` | Balanced *(recommended)* |
 | `0.05` | Only large movements (people walking in front of camera) |
 | `0.10` | Coarse — only extreme changes |
 
@@ -148,6 +148,6 @@ Because the active file is snapshotted every 10 minutes, you'll see motion clips
 | `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
 | `REMOTE_PATH` | `Nas2CloudBackup` | Destination folder path on Google Drive. |
 | `MOTION_DETECTION` | `true` | Set to `false` to disable motion clip extraction. |
-| `MOTION_SENSITIVITY` | `0.02` | FFmpeg scene change threshold (lower = more sensitive). |
+| `MOTION_SENSITIVITY` | `0.04` | FFmpeg scene change threshold (lower = more sensitive). |
 | `MOTION_CLIP_BUFFER` | `15` | Seconds added before/after each detected motion event. |
 | `MOTION_CHECK_INTERVAL` | `600` | How often (in seconds) to scan recordings for motion. |
