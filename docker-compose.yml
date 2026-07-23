@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  xiaomi-sync:
+  nas2cloud-smartcam:
     build: .
-    container_name: xiaomi-sync
+    container_name: nas2cloud-smartcam
     ports:
       - "445:445"
       - "139:139"
@@ -17,9 +17,13 @@ services:
       - SYNC_INTERVAL=3600
       - LOCAL_RETENTION_DAYS=7
       - REMOTE_RETENTION_DAYS=30
-      - REMOTE_PATH=${REMOTE_PATH:-XiaomiCameraBackup}
+      - REMOTE_PATH=${REMOTE_PATH:-Nas2CloudBackup}
+      - MOTION_DETECTION=${MOTION_DETECTION:-true}
+      - MOTION_SENSITIVITY=${MOTION_SENSITIVITY:-0.02}
+      - MOTION_CLIP_BUFFER=${MOTION_CLIP_BUFFER:-15}
+      - MOTION_CHECK_INTERVAL=${MOTION_CHECK_INTERVAL:-600}
     volumes:
       - ./data:/mnt/data
       - ./rclone:/app/rclone
-    command: '-u "camera;camera123" -s "xiaomi_nas;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = xiaominas"'
+    command: '-u "camera;camera123" -s "cam_storage;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = camnas"'
     restart: unless-stopped
