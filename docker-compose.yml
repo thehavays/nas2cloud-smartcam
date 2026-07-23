@@ -17,7 +17,7 @@ services:
       - SYNC_INTERVAL=3600
       - LOCAL_RETENTION_DAYS=7
       - REMOTE_RETENTION_DAYS=30
-      - REMOTE_PATH=Dilo - Eray Ortak Klasör/XiaomiCameraBackup
+      - REMOTE_PATH=${REMOTE_PATH:-XiaomiCameraBackup}
     volumes:
       - ./data:/mnt/data
       - ./rclone:/app/rclone
