@@ -55,8 +55,9 @@ docker compose up -d
 ```
 
 > 💡 **Tip:** 
-> * **On Linux/Ubuntu:** If you want automatic NetBIOS network broadcast discovery without entering IP addresses manually, you can optionally replace `ports:` with `network_mode: "host"`.
+> * **On Linux/Ubuntu:** The default port mapping approach works fine, but if you want automatic NetBIOS network broadcast discovery (so you don't need to enter IP addresses manually in the camera app), you can use the Linux-specific file instead: `docker compose -f docker-compose-linux.yml up -d`
 > * **On macOS:** Make sure **macOS File Sharing** (*System Settings > General > Sharing > File Sharing*) is turned OFF to prevent port `445` conflicts.
+> * **On Windows:** Make sure port `445` is not being used by the native Windows "Server" (SMB) service.
 
 ---
 
