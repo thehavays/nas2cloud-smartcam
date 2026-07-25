@@ -115,6 +115,12 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
   # Skip completed files that were already processed
   if [ "$IS_SNAPSHOT" = false ]; then
     grep -qF "$VIDEO" "$PROCESSED_LOG" && continue
+  else
+    # If this is the snapshot, but the original file it was copied from was
+    # already processed as a completed file, skip it to avoid duplicate clips.
+    if [ -n "$ACTIVE_FILE" ]; then
+      grep -qF "/mnt/data/$ACTIVE_FILE" "$PROCESSED_LOG" && continue
+    fi
   fi
 
   log "ANALYZING  $BASENAME"
