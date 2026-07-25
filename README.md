@@ -15,48 +15,23 @@ To make setup as easy as possible, a web interface is included to handle Google 
 
 ---
 
-## 1. Start the Environment (Cross-Platform: Linux, macOS, Windows)
+## 1. Start the Environment (Cross-Platform: Linux, Windows)
 
-Create a `docker-compose.yml` file anywhere on your computer (Ubuntu, macOS, or Windows):
+Depending on your Operating System, use the appropriate configuration file:
 
-```yaml
-services:
-  nas2cloud-smartcam:
-    image: ghcr.io/thehavays/nas2cloud-smartcam:latest
-    container_name: nas2cloud-smartcam
-    ports:
-      - "445:445"
-      - "139:139"
-      - "8080:8080"
-      - "137:137/udp"
-      - "138:138/udp"
-    environment:
-      - USERID=1000
-      - GROUPID=1000
-      - TZ=UTC
-      - SYNC_INTERVAL=3600          # Sync every 1 hour (in seconds)
-      - LOCAL_RETENTION_DAYS=7       # Delete local files older than 7 days
-      - REMOTE_PATH=${REMOTE_PATH:-Nas2CloudBackup}     # Target path on Google Drive
-      # --- Motion Detection (optional) ---
-      - MOTION_DETECTION=true        # Set to 'false' to disable
-      - MOTION_SENSITIVITY=0.04      # Scene change threshold (0.01=sensitive, 0.10=lenient)
-      - MOTION_CLIP_BUFFER=15        # Seconds added before/after each motion event
-      - MOTION_CHECK_INTERVAL=600    # How often to scan for motion (seconds, default: 10 min)
-    volumes:
-      - ./data:/mnt/data
-      - ./rclone:/app/rclone
-    command: '-u "camera;camera123" -s "cam_storage;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = camnas"'
-    restart: unless-stopped
+### Windows (requires explicit port exposure)
+Use [docker-compose-windows.yml](file:///home/thehavays/Desktop/projects/nas2cloud-smartcam/docker-compose-windows.yml) and run:
+```bash
+docker compose -f docker-compose-windows.yml up -d
 ```
 
-Then run:
+### Linux (uses host networking for automatic discovery)
+Use [docker-compose-linux.yml](file:///home/thehavays/Desktop/projects/nas2cloud-smartcam/docker-compose-linux.yml) and run:
 ```bash
-docker compose up -d
+docker compose -f docker-compose-linux.yml up -d
 ```
 
 > 💡 **Tip:** 
-> * **On Linux/Ubuntu:** The default port mapping approach works fine, but if you want automatic NetBIOS network broadcast discovery (so you don't need to enter IP addresses manually in the camera app), you can use the Linux-specific file instead: `docker compose -f docker-compose-linux.yml up -d`
-> * **On macOS:** Make sure **macOS File Sharing** (*System Settings > General > Sharing > File Sharing*) is turned OFF to prevent port `445` conflicts.
 > * **On Windows:** Make sure port `445` is not being used by the native Windows "Server" (SMB) service.
 
 ---
@@ -81,7 +56,7 @@ The setup process varies depending on your camera brand, but generally requires 
 ### Example: Xiaomi Cameras (Mi Home)
 1. Open the **Mi Home app**.
 2. Navigate to your camera: **Settings (⋮)** -> **Storage Management** -> **NAS network storage**.
-3. Select your device from the list (usually named `camnas` or your host PC/Mac IP address).
+3. Select your device from the list (usually named `camnas` or your host PC IP address).
    * *If `camnas` is not discovered automatically, enter your host IP address manually (e.g., `192.168.1.50`).*
 4. Enter the SMB credentials:
    * **Username:** `camera`
