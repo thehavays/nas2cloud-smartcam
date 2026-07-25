@@ -34,6 +34,15 @@ get_video_start_epoch() {
   _VIDEO="$1"
   _DURATION="$2"
 
+  # Internal logger: writes to stderr + events file only (NOT stdout)
+  # This is critical — the function is called in a $() subshell, so any
+  # stdout output would pollute the returned epoch value.
+  _log() {
+    MSG="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo "$MSG" >&2
+    echo "$MSG" >> "$EVENTS_LOG"
+  }
+
   # Level 1 — embedded MP4 metadata
   _META=$(ffprobe -v error \
     -show_entries format_tags=creation_time \
@@ -43,7 +52,7 @@ get_video_start_epoch() {
     _EPOCH=$(date -d "$_META" +%s 2>/dev/null)
     # Reject epoch=0 (1970-01-01): camera did not set its clock
     if [ -n "$_EPOCH" ] && [ "$_EPOCH" -gt 86400 ]; then
-      log "TIMESRC    Level 1 (metadata)  → $_META"
+      _log "TIMESRC    Level 1 (metadata)  → $_META"
       echo "$_EPOCH"
       return
     fi
@@ -59,7 +68,7 @@ get_video_start_epoch() {
     _TIME="${_CLEAN#????????}"
     _EPOCH=$(date -d "${_DATE:0:4}-${_DATE:4:2}-${_DATE:6:2} ${_TIME:0:2}:${_TIME:2:2}:${_TIME:4:2}" +%s 2>/dev/null)
     if [ -n "$_EPOCH" ] && [ "$_EPOCH" -gt 86400 ]; then
-      log "TIMESRC    Level 2 (filename)   → $_RAW"
+      _log "TIMESRC    Level 2 (filename)   → $_RAW"
       echo "$_EPOCH"
       return
     fi
@@ -69,15 +78,16 @@ get_video_start_epoch() {
   _MTIME=$(stat -c %Y "$_VIDEO" 2>/dev/null)
   if [ -n "$_MTIME" ] && [ -n "$_DURATION" ]; then
     _EPOCH=$(awk "BEGIN{printf \"%d\", $_MTIME - $_DURATION}")
-    log "TIMESRC    Level 3 (mtime-dur)  → $(date -d \"@$_EPOCH\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
+    _log "TIMESRC    Level 3 (mtime-dur)  → $(date -d \"@$_EPOCH\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
     echo "$_EPOCH"
     return
   fi
 
   # Final safety fallback
-  log "TIMESRC    Level 3 (now)        → fallback to current time"
+  _log "TIMESRC    Level 3 (now)        → fallback to current time"
   date +%s
 }
+
 
 # ── Step 1: Snapshot the active (currently written) file ─────────────────────
 # Detect which file is locked by Samba (camera is still writing to it)
