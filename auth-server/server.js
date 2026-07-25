@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
     res.send(`
         <html>
         <head>
-            <title>Xiaomi Camera Drive Sync - Setup</title>
+            <title>Nas2Cloud SmartCam - Setup</title>
             <style>
                 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #333; }
                 input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
@@ -122,7 +122,9 @@ token = ${rcloneToken}
             <head>
                 <style>
                     body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; color: #333; text-align: center; }
-                    .success { background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; }
+                    .success { background: #d4edda; color: #155724; padding: 20px; border-radius: 8px; border: 1px solid #c3e6cb; margin-bottom: 20px; }
+                    .restart { background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; border: 1px solid #ffc107; text-align: left; }
+                    .restart code { display: block; background: #212529; color: #f8f9fa; padding: 10px 15px; border-radius: 4px; margin-top: 10px; font-size: 14px; letter-spacing: 0.5px; }
                 </style>
             </head>
             <body>
@@ -130,8 +132,11 @@ token = ${rcloneToken}
                     <h2>🎉 Success!</h2>
                     <p>Google Drive has been securely connected and your configuration has been saved.</p>
                 </div>
-                <p>You can now safely close this window.</p>
-                <p><i>Note: Please restart your docker-compose environment to apply the new configuration.</i></p>
+                <div class="restart">
+                    <strong>⚠️ Restart required to apply the new configuration.</strong>
+                    <p>Run the following command on your host machine:</p>
+                    <code>docker compose -f docker-compose-linux.yml restart</code>
+                </div>
             </body>
             </html>
         `);
