@@ -25,6 +25,60 @@ log() {
   echo "$MSG" >> "$EVENTS_LOG"
 }
 
+# ── Helper: Get video wall-clock start time as Unix epoch ────────────────────
+# Brand-agnostic 3-level fallback chain:
+#   Level 1: ffprobe creation_time metadata  (Xiaomi, Reolink, Amcrest…)
+#   Level 2: Timestamp parsed from filename  (Reolink: 20250725_143000.mp4)
+#   Level 3: File mtime minus duration       (last resort — always works)
+get_video_start_epoch() {
+  _VIDEO="$1"
+  _DURATION="$2"
+
+  # Level 1 — embedded MP4 metadata
+  _META=$(ffprobe -v error \
+    -show_entries format_tags=creation_time \
+    -of default=noprint_wrappers=1:nokey=1 \
+    "$_VIDEO" 2>/dev/null | head -1)
+  if [ -n "$_META" ]; then
+    _EPOCH=$(date -d "$_META" +%s 2>/dev/null)
+    # Reject epoch=0 (1970-01-01): camera did not set its clock
+    if [ -n "$_EPOCH" ] && [ "$_EPOCH" -gt 86400 ]; then
+      log "TIMESRC    Level 1 (metadata)  → $_META"
+      echo "$_EPOCH"
+      return
+    fi
+  fi
+
+  # Level 2 — timestamp embedded in filename
+  # Matches: 20250725_143000, 20250725143000, 2025-07-25_14-30-00, etc.
+  _FNAME=$(basename "$_VIDEO")
+  _RAW=$(echo "$_FNAME" | grep -oE '[0-9]{8}[_T-]?[0-9]{6}' | head -1)
+  if [ -n "$_RAW" ]; then
+    _CLEAN=$(echo "$_RAW" | tr -d '_T-')
+    _DATE="${_CLEAN%${_CLEAN#????????}}"
+    _TIME="${_CLEAN#????????}"
+    _EPOCH=$(date -d "${_DATE:0:4}-${_DATE:4:2}-${_DATE:6:2} ${_TIME:0:2}:${_TIME:2:2}:${_TIME:4:2}" +%s 2>/dev/null)
+    if [ -n "$_EPOCH" ] && [ "$_EPOCH" -gt 86400 ]; then
+      log "TIMESRC    Level 2 (filename)   → $_RAW"
+      echo "$_EPOCH"
+      return
+    fi
+  fi
+
+  # Level 3 — file mtime minus video duration (approximate recording start)
+  _MTIME=$(stat -c %Y "$_VIDEO" 2>/dev/null)
+  if [ -n "$_MTIME" ] && [ -n "$_DURATION" ]; then
+    _EPOCH=$(awk "BEGIN{printf \"%d\", $_MTIME - $_DURATION}")
+    log "TIMESRC    Level 3 (mtime-dur)  → $(date -d \"@$_EPOCH\" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"
+    echo "$_EPOCH"
+    return
+  fi
+
+  # Final safety fallback
+  log "TIMESRC    Level 3 (now)        → fallback to current time"
+  date +%s
+}
+
 # ── Step 1: Snapshot the active (currently written) file ─────────────────────
 # Detect which file is locked by Samba (camera is still writing to it)
 ACTIVE_FILE=$(smbstatus -L 2>/dev/null | grep -oE '[^ ]+\.mp4' | head -1)
@@ -74,8 +128,12 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
 
   # ── Step 4: Merge nearby events and cut clips ─────────────────────────────
   DURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$VIDEO" 2>/dev/null || echo "0")
-  # Extract true recording date from video metadata
-  CLIP_DATE=$(ffprobe -v error -show_entries format_tags=creation_time -of default=noprint_wrappers=1:nokey=1 "$VIDEO" 2>/dev/null | cut -dT -f1)
+
+  # Resolve the real wall-clock start time of this video (brand-agnostic)
+  VIDEO_START_EPOCH=$(get_video_start_epoch "$VIDEO" "$DURATION")
+
+  # Derive clip date from the resolved start epoch
+  CLIP_DATE=$(date -d "@$VIDEO_START_EPOCH" +%Y-%m-%d 2>/dev/null)
   [ -z "$CLIP_DATE" ] && CLIP_DATE=$(date +%Y-%m-%d)
   mkdir -p "$MOTION_DIR/$CLIP_DATE"
 
@@ -94,7 +152,9 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
     EXCEEDS=$(awk "BEGIN{print ($START >= $DURATION) ? 1 : 0}")
     [ "$EXCEEDS" = "1" ] && continue
 
-    TS_LABEL=$(date -u -d "@${TS%.*}" +%H-%M-%S 2>/dev/null || printf "%06d" "${TS%.*}")
+    # Real wall-clock time = video start + in-video offset
+    EVENT_EPOCH=$(awk "BEGIN{printf \"%d\", $VIDEO_START_EPOCH + ${TS%.*}}")
+    TS_LABEL=$(date -d "@$EVENT_EPOCH" +%H-%M-%S 2>/dev/null || printf "%06d" "${TS%.*}")
     OUT_FILE="$MOTION_DIR/$CLIP_DATE/${TS_LABEL}.mp4"
 
     log "MOTION     t=${TS}s → MotionClips/$CLIP_DATE/${TS_LABEL}.mp4"
