@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   nas2cloud-smartcam:
     build: .
@@ -8,7 +6,7 @@ services:
     environment:
       - USERID=1000
       - GROUPID=1000
-      - SYNC_INTERVAL=3600
+      - SYNC_INTERVAL=900
       - LOCAL_RETENTION_DAYS=7
       - REMOTE_RETENTION_DAYS=30
       - REMOTE_PATH=${REMOTE_PATH:-Nas2CloudBackup}
