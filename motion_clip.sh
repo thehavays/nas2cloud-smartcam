@@ -146,7 +146,12 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
   DURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$VIDEO" 2>/dev/null || echo "0")
 
   # Resolve the real wall-clock start time of this video (brand-agnostic)
-  VIDEO_START_EPOCH=$(get_video_start_epoch "$VIDEO" "$DURATION")
+  if [ "$IS_SNAPSHOT" = true ] && [ -n "$ACTIVE_FILE" ]; then
+    # Use the original file path so metadata and filename parsing (Level 1 & 2) work correctly
+    VIDEO_START_EPOCH=$(get_video_start_epoch "/mnt/data/$ACTIVE_FILE" "$DURATION")
+  else
+    VIDEO_START_EPOCH=$(get_video_start_epoch "$VIDEO" "$DURATION")
+  fi
 
   # Derive clip date from the resolved start epoch
   CLIP_DATE=$(date -d "@$VIDEO_START_EPOCH" +%Y-%m-%d 2>/dev/null)
