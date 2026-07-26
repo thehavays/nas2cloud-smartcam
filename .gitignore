@@ -10,3 +10,5 @@ auth-server/node_modules/
 # Ignore environment files
 .env
 *.env
+
+.env
