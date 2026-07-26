@@ -6,8 +6,11 @@ const path = require('path');
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 
-let storedClientId = '';
-let storedClientSecret = '';
+const clientIdEnv = process.env.GOOGLE_CLIENT_ID || '';
+const clientSecretEnv = process.env.GOOGLE_CLIENT_SECRET || '';
+
+let storedClientId = clientIdEnv;
+let storedClientSecret = clientSecretEnv;
 let storedLocalRetention = '7';
 let storedRemoteRetention = '30';
 const REDIRECT_URI = 'http://127.0.0.1:8080/callback';
@@ -38,13 +41,15 @@ app.get('/', (req, res) => {
             ${isConfigured ? '<div class="success">✅ Google Drive is already connected! You can close this page.</div>' : ''}
             
             <div class="card">
-                <p>Enter your Google Cloud OAuth Client ID and Secret to securely connect your Google Drive.</p>
+                <p>${clientIdEnv ? 'Your server is pre-configured with a Google Cloud Project. Just click below to securely connect your Google Drive.' : 'Enter your Google Cloud OAuth Client ID and Secret to securely connect your Google Drive.'}</p>
                 <form action="/login" method="POST">
+                    ${clientIdEnv ? '' : `
                     <label><b>Client ID:</b></label>
                     <input type="text" name="clientId" required placeholder="e.g. 123456789-abc.apps.googleusercontent.com">
                     
                     <label><b>Client Secret:</b></label>
                     <input type="password" name="clientSecret" required placeholder="e.g. GOCSPX-123456789">
+                    `}
                     
                     <label><b>Local Retention (Days):</b></label>
                     <input type="number" name="localRetention" required value="7" min="1">
@@ -54,23 +59,23 @@ app.get('/', (req, res) => {
                     <input type="number" name="remoteRetention" required value="30" min="1">
                     <small style="display:block;margin-top:-10px;margin-bottom:15px;color:#666;">How long to keep videos on Google Drive before deleting.</small>
                     
-                    <button type="submit">Save & Connect Google Drive</button>
+                    <button type="submit">Connect Google Drive</button>
                 </form>
             </div>
             
-            <p><small><b>Need keys?</b> Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> &rarr; Create Project &rarr; <b>Enable "Google Drive API"</b> &rarr; Credentials &rarr; Create OAuth Client ID (Desktop App).</small></p>
+            ${clientIdEnv ? '' : '<p><small><b>Need keys?</b> Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> &rarr; Create Project &rarr; <b>Enable "Google Drive API"</b> &rarr; Credentials &rarr; Create OAuth Client ID (Desktop App).</small></p>'}
         </body>
         </html>
     `);
 });
 
 app.post('/login', (req, res) => {
-    storedClientId = req.body.clientId.trim();
-    storedClientSecret = req.body.clientSecret.trim();
+    storedClientId = clientIdEnv || req.body.clientId.trim();
+    storedClientSecret = clientSecretEnv || req.body.clientSecret.trim();
     storedLocalRetention = req.body.localRetention || '7';
     storedRemoteRetention = req.body.remoteRetention || '30';
-    
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + 
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${storedClientId}&` +
         `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
         `response_type=code&` +
