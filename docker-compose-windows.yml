@@ -19,6 +19,8 @@ services:
       - MOTION_SENSITIVITY=${MOTION_SENSITIVITY:-0.04}
       - MOTION_CLIP_BUFFER=${MOTION_CLIP_BUFFER:-15}
       - MOTION_CHECK_INTERVAL=${MOTION_CHECK_INTERVAL:-600}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
