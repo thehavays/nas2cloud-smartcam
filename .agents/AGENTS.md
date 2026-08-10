@@ -22,19 +22,19 @@ This document is a comprehensive guide for AI agents and developers to understan
 
 The project code is structured as follows:
 
-* **[nas2cloud-smartcam/](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam)**: Root folder of the server repository.
-  * **[Dockerfile](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/Dockerfile)**: Docker build configuration. Extends `dperson/samba` (Alpine Linux base) and installs Node.js, npm, curl, unzip, and FFmpeg.
-  * **[docker-compose-linux.yml](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/docker-compose-linux.yml)**: Deployment configuration for Linux. Uses `network_mode: "host"` so the camera can auto-discover the `CAMNAS` broadcast on the local network.
-  * **[docker-compose-windows.yml](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/docker-compose-windows.yml)**: Deployment configuration for Windows. Exposes explicit port mappings (`8080`, `139`, `445`).
-  * **[entrypoint.sh](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/entrypoint.sh)**: Container startup script. Launches the OAuth Web Server and the Sync Script in the background, then boots the Samba daemon in the foreground.
-  * **[sync.sh](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/sync.sh)**: Main background sync loop. Runs `rclone` sync cycles, triggers the motion scanner, and executes local and remote file retention cleanups.
-  * **[motion_clip.sh](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/motion_clip.sh)**: Motion scanning engine. Performs:
+* **[nas2cloud-smartcam/](../)**: Root folder of the server repository.
+  * **[Dockerfile](../Dockerfile)**: Docker build configuration. Extends `dperson/samba` (Alpine Linux base) and installs Node.js, npm, curl, unzip, and FFmpeg.
+  * **[docker-compose-linux.yml](../docker-compose-linux.yml)**: Deployment configuration for Linux. Uses `network_mode: "host"` so the camera can auto-discover the `CAMNAS` broadcast on the local network.
+  * **[docker-compose-windows.yml](../docker-compose-windows.yml)**: Deployment configuration for Windows. Exposes explicit port mappings (`8080`, `139`, `445`).
+  * **[entrypoint.sh](../entrypoint.sh)**: Container startup script. Launches the OAuth Web Server and the Sync Script in the background, then boots the Samba daemon in the foreground.
+  * **[sync.sh](../sync.sh)**: Main background sync loop. Runs `rclone` sync cycles, triggers the motion scanner, and executes local and remote file retention cleanups.
+  * **[motion_clip.sh](../motion_clip.sh)**: Motion scanning engine. Performs:
     * Samba lock inspection via `smbstatus` to detect the currently writing "active" video file.
     * FFmpeg scene change analysis (`select='gt(scene,SENSITIVITY)'`).
     * Epoch start-time resolution with a 3-level fallback chain (Metadata -> Filename -> Mtime).
     * Sub-clip cutting using FFmpeg stream copy.
-  * **[auth-server/](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/auth-server)**: Web authentication service.
-    * **[server.js](file:///home/thehavays/Desktop/projects/workspace-nas2cloud-smartcam/nas2cloud-smartcam/auth-server/server.js)**: Node.js Express server. Pre-configures credentials if `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are passed as environment variables. Writes and manages the `rclone.conf` config.
+  * **[auth-server/](../auth-server)**: Web authentication service.
+    * **[server.js](../auth-server/server.js)**: Node.js Express server. Pre-configures credentials if `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are passed as environment variables. Writes and manages the `rclone.conf` config.
 
 ---
 
@@ -71,7 +71,11 @@ docker compose -f docker-compose-linux.yml up -d --build
 
 Refer to the detailed [Git & GitHub Workflow Guidelines](./GIT_WORKFLOW.md) for branch strategy, commit rules, PR workflows, and the GITHUB_TOKEN environment override command.
 
-### 3. Debugging Commands
+### 3. GitHub Actions & CI/CD
+
+Refer to the detailed [GitHub Actions Guidelines](./GITHUB_ACTIONS.md) for workflow details, GHCR container image publishing, trigger rules, and CI/CD setup.
+
+### 4. Debugging Commands
 
 * **Check camera connection to SMB**:
 
