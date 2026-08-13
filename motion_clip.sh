@@ -112,6 +112,12 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
 
   BASENAME=$(basename "$VIDEO")
 
+  if [ "$IS_SNAPSHOT" = true ] && [ -n "$ACTIVE_FILE" ]; then
+    CAM_NAME=$(basename "$(dirname "/mnt/data/$ACTIVE_FILE")")
+  else
+    CAM_NAME=$(basename "$(dirname "$VIDEO")")
+  fi
+
   # Skip completed files that were already processed
   if [ "$IS_SNAPSHOT" = false ]; then
     grep -qF "$VIDEO" "$PROCESSED_LOG" && continue
@@ -156,7 +162,7 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
   # Derive clip date from the resolved start epoch
   CLIP_DATE=$(date -d "@$VIDEO_START_EPOCH" +%Y-%m-%d 2>/dev/null)
   [ -z "$CLIP_DATE" ] && CLIP_DATE=$(date +%Y-%m-%d)
-  mkdir -p "$MOTION_DIR/$CLIP_DATE"
+  mkdir -p "$MOTION_DIR/$CAM_NAME/$CLIP_DATE"
 
   CLIP_COUNT=0
   LAST_CLIP_END="-999"
@@ -176,9 +182,9 @@ for VIDEO in "$DATA_DIR"/*/*.mp4 "$SNAPSHOT"; do
     # Real wall-clock time = video start + in-video offset
     EVENT_EPOCH=$(awk "BEGIN{printf \"%d\", $VIDEO_START_EPOCH + ${TS%.*}}")
     TS_LABEL=$(date -d "@$EVENT_EPOCH" +%H-%M-%S 2>/dev/null || printf "%06d" "${TS%.*}")
-    OUT_FILE="$MOTION_DIR/$CLIP_DATE/${TS_LABEL}.mp4"
+    OUT_FILE="$MOTION_DIR/$CAM_NAME/$CLIP_DATE/${TS_LABEL}.mp4"
 
-    log "MOTION     t=${TS}s → MotionClips/$CLIP_DATE/${TS_LABEL}.mp4"
+    log "MOTION     t=${TS}s → MotionClips/$CAM_NAME/$CLIP_DATE/${TS_LABEL}.mp4"
     ffmpeg -y -i "$VIDEO" -ss "$START" -t "$CLIP_DURATION" \
       -c copy -avoid_negative_ts make_zero \
       "$OUT_FILE" -loglevel error 2>/dev/null || true
