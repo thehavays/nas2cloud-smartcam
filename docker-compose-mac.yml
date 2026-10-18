@@ -4,10 +4,7 @@ services:
     container_name: nas2cloud-smartcam
     ports:
       - "8080:8080"
-      - "137:137/udp"
-      - "138:138/udp"
-      - "139:139/tcp"
-      - "445:445/tcp"
+      - "1445:445/tcp"
     environment:
       - USERID=1000
       - GROUPID=1000
