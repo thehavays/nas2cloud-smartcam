@@ -25,7 +25,8 @@ The project code is structured as follows:
 * **[nas2cloud-smartcam/](../)**: Root folder of the server repository.
   * **[Dockerfile](../Dockerfile)**: Docker build configuration. Extends `dperson/samba` (Alpine Linux base) and installs Node.js, npm, curl, unzip, and FFmpeg.
   * **[docker-compose-linux.yml](../docker-compose-linux.yml)**: Deployment configuration for Linux. Uses `network_mode: "host"` so the camera can auto-discover the `CAMNAS` broadcast on the local network.
-  * **[docker-compose-windows.yml](../docker-compose-windows.yml)**: Deployment configuration for Windows. Exposes explicit port mappings (`8080`, `139`, `445`).
+  * **[docker-compose-mac.yml](../docker-compose-mac.yml)**: Deployment configuration for macOS. Exposes explicit port mappings (`8080`, `137`, `138`, `139`, `445`) and handles macOS timezone via `TZ` environment variable.
+  * **[docker-compose-windows.yml](../docker-compose-windows.yml)**: Deployment configuration for Windows. Exposes explicit port mappings (`8080`, `137`, `138`, `139`, `445`).
   * **[entrypoint.sh](../entrypoint.sh)**: Container startup script. Launches the OAuth Web Server and the Sync Script in the background, then boots the Samba daemon in the foreground.
   * **[sync.sh](../sync.sh)**: Main background sync loop. Runs `rclone` sync cycles, triggers the motion scanner, and executes local and remote file retention cleanups.
   * **[motion_clip.sh](../motion_clip.sh)**: Motion scanning engine. Performs:
@@ -60,11 +61,15 @@ When developing or debugging, look for files in these paths on the host system:
 To apply changes to scripts or `server.js`, you must rebuild the image and recreate the container:
 
 ```bash
-# Stop the active container
+# Stop the active container (use docker-compose-mac.yml on macOS, docker-compose-windows.yml on Windows)
 docker compose -f docker-compose-linux.yml down
+# Or on macOS:
+# docker compose -f docker-compose-mac.yml down
 
 # Rebuild and run in the background
 docker compose -f docker-compose-linux.yml up -d --build
+# Or on macOS:
+# docker compose -f docker-compose-mac.yml up -d --build
 ```
 
 ### 2. Git & GitHub Flow
@@ -73,7 +78,7 @@ Refer to the detailed [Git & GitHub Workflow Guidelines](./GIT_WORKFLOW.md) for 
 
 ### 3. GitHub Actions & CI/CD
 
-Refer to the detailed [GitHub Actions Guidelines](./GITHUB_ACTIONS.md) for workflow details, GHCR container image publishing, trigger rules, and CI/CD setup.
+Refer to [.agents/CI.md](./CI.md) for local quality gates and PR verification, and [.agents/CD.md](./CD.md) for GHCR multi-arch container image publishing workflows.
 
 ### 4. Debugging Commands
 
