@@ -26,5 +26,5 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - ./data:/mnt/data
       - ./rclone:/app/rclone
-    command: '-u "smartcam;smartcam123" -s "cam_storage;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = camnas"'
+    command: '-u "camera;camera123" -s "cam_storage;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = camnas"'
     restart: unless-stopped

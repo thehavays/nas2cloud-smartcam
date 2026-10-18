@@ -15,24 +15,38 @@ To make setup as easy as possible, a web interface is included to handle Google 
 
 ---
 
-## 1. Start the Environment (Cross-Platform: Linux, Windows)
+## 1. Start the Environment (Cross-Platform: Linux, Windows, macOS)
 
 Depending on your Operating System, use the appropriate configuration file:
 
+### macOS (requires explicit port exposure & multi-arch Docker image)
+Use [docker-compose-mac.yml](docker-compose-mac.yml) and run:
+```bash
+docker compose -f docker-compose-mac.yml up -d
+```
+
+> 💡 **Tip for macOS:**
+> * **Port 445 Conflict:** If macOS built-in **File Sharing** is turned ON, it will block port 445. Go to **System Settings > General > Sharing** and turn off **File Sharing**. You can verify that port 445 is free with:
+>   ```bash
+>   sudo lsof -i :445
+>   ```
+> * **Camera Discovery:** Because Docker Desktop on macOS runs inside a VM, NetBIOS broadcasts (`camnas`) may not cross to your physical Wi-Fi network. Find your Mac's local IP address with `ipconfig getifaddr en0` (or `en1`) and enter it directly in your camera app.
+> * **Preventing Sleep:** If using your Mac as an always-on NVR server, configure your Mac not to sleep when the display is off (under **System Settings > Displays / Energy Saver** or by running `caffeinate` in background).
+
 ### Windows (requires explicit port exposure)
-Use [docker-compose-windows.yml](file:///home/thehavays/Desktop/projects/nas2cloud-smartcam/docker-compose-windows.yml) and run:
+Use [docker-compose-windows.yml](docker-compose-windows.yml) and run:
 ```bash
 docker compose -f docker-compose-windows.yml up -d
 ```
 
+> 💡 **Tip for Windows:** 
+> * Make sure port `445` is not being used by the native Windows "Server" (SMB) service.
+
 ### Linux (uses host networking for automatic discovery)
-Use [docker-compose-linux.yml](file:///home/thehavays/Desktop/projects/nas2cloud-smartcam/docker-compose-linux.yml) and run:
+Use [docker-compose-linux.yml](docker-compose-linux.yml) and run:
 ```bash
 docker compose -f docker-compose-linux.yml up -d
 ```
-
-> 💡 **Tip:** 
-> * **On Windows:** Make sure port `445` is not being used by the native Windows "Server" (SMB) service.
 
 ---
 
@@ -119,6 +133,7 @@ Because the active file is snapshotted every 10 minutes, you'll see motion clips
 ## 🔧 Environment Variables Reference
 | Variable | Default | Description |
 | :--- | :--- | :--- |
+| `TZ` | Host time (`/etc/localtime`) | Timezone identifier (e.g. `Europe/Istanbul`, `America/New_York`, `UTC`). |
 | `SYNC_INTERVAL` | `3600` | Sync frequency in seconds (default: 1 hour). |
 | `LOCAL_RETENTION_DAYS` | `7` | Days to keep video files on local PC disk before auto-delete. |
 | `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
