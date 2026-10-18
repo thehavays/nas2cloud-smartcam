@@ -42,37 +42,39 @@ To prevent unwanted changes, maintain strict quality control, and ensure impleme
 
 ---
 
-## 🔑 GitHub CLI (`gh`) & GITHUB_TOKEN Conflict
+## 🤖 GitHub MCP Server Integration
 
-There is a conflict with the `GITHUB_TOKEN` environment variable in the shell environment.
+All GitHub operations in this workspace are managed natively via the **GitHub MCP Server**. 
+Do **NOT** use the `gh` CLI in terminal commands. Using GitHub MCP tools completely eliminates local shell `GITHUB_TOKEN` environment conflicts and provides authenticated, programmatic GitHub API access.
 
-* **Problem**: The shell env has an invalid `GITHUB_TOKEN` set, which overrides your local authentication keyring.
-* **Rule**: When executing **any** `gh` CLI commands, you **must** prefix the command with `GITHUB_TOKEN=` to bypass the invalid environment token and use the working local credential manager.
-  * *Correct*: `GITHUB_TOKEN= gh pr create ...`
-  * *Incorrect*: `gh pr create ...`
+### MCP Tools Mapping:
+| Operation | GitHub MCP Tool | Arguments / Example |
+| :--- | :--- | :--- |
+| **List Issues** | `list_issues` | `owner: "thehavays"`, `repo: "nas2cloud-smartcam"`, `state: "open"` |
+| **Create Issue** | `issue_write` | `method: "create"`, `title`, `body`, `assignees: ["thehavays"]` |
+| **Close Issue** | `issue_write` | `method: "update"`, `issue_number`, `state: "closed"`, `state_reason: "completed"` |
+| **Add Comment** | `add_issue_comment` | `issue_number`, `body: "..."` |
+| **Create PR** | `create_pull_request` | `base: "dev"`, `head: "<branch>"`, `title`, `body` |
+| **Inspect PR** | `pull_request_read` | `method: "get"`, `pullNumber` |
+| **Merge PR** | `merge_pull_request` | `pullNumber`, `merge_method: "merge"` |
+| **List Releases** | `list_releases` | `owner: "thehavays"`, `repo: "nas2cloud-smartcam"` |
 
 ---
 
-## 📋 Issue Pre-requisite & Closure Policy (MANDATORY)
+## 📋 Issue Pre-requisite & Branching Workflow (MANDATORY)
 
 Before committing changes or starting work:
-1. **Verify Existing Issues**: Check if an open GitHub Issue exists for the work:
-   ```bash
-   GITHUB_TOKEN= gh issue list --assignee thehavays
-   ```
-2. **Create Issue First**: If no issue exists, create one and assign it:
-   ```bash
-   GITHUB_TOKEN= gh issue create --assignee thehavays --title "<summary>" --body "<description>"
-   ```
+1. **Verify Existing Issues**: Call `list_issues` via GitHub MCP to check if an open issue exists.
+2. **Create Issue First**: If no issue exists, call `issue_write` (method: `create`) with title, structured body, and `assignees: ["thehavays"]`.
 3. **Branch Creation**: Create and switch to a branch linked to the issue:
    ```bash
    git checkout dev
    git pull origin dev
-   GITHUB_TOKEN= gh issue develop <issue_number> --base dev --checkout
+   git checkout -b <issue_number>-<type>-<short-description>
    ```
 4. **Issue Linking Policy**:
    * **Feature PRs (targeting `dev`)**: Use `ref #<issue_number>` in PR description. **DO NOT** use `closes #...` on `dev` PRs.
-   * **Release PRs (targeting `main`)**: Use `closes #<issue_number>` in the Release PR description so issues are closed ONLY when promoted to production.
+   * **Release PRs (targeting `main`)**: Use `closes #<issue_number>` in the Release PR description so issues are closed upon production release, or close via `issue_write` after release.
 
 ---
 
@@ -85,27 +87,30 @@ Before committing changes or starting work:
   * `docs: ...` for documentation updates.
 * **PR Target**: Always direct feature pull requests to the `dev` branch.
 * **Pre-flight Check**: Always run script syntax checks (`sh -n sync.sh motion_clip.sh entrypoint.sh`) and Docker build check before requesting PR approval.
+* **PR Creation**: Call `create_pull_request` via GitHub MCP after User Confirmation Gate 1.
+* **PR Merge**: Call `merge_pull_request` via GitHub MCP after User Confirmation Gate 2.
 
 ---
 
 ## 🏷️ Tagging & Releases
 
-When asked to create a tag/release:
+When creating a release:
 
 1. **Checkout the main branch** and pull the latest changes:
    ```bash
    git checkout main
    git pull origin main
    ```
-2. **Create the tag locally** (use semantic versioning, e.g., `v1.0.1`):
+
+2. **Create the tag locally** (use semantic versioning, e.g., `v1.1.0`):
    ```bash
-   git tag -a v<version> -m "Release v<version>"
+   git tag -a v<version> -m "Release v<version> - <summary>"
    ```
+
 3. **Push the tag to GitHub**:
    ```bash
    git push origin v<version>
    ```
-4. **Create a GitHub release** from the tag:
-   ```bash
-   GITHUB_TOKEN= gh release create v<version> --title "Release v<version>" --generate-notes
-   ```
+
+4. **Automated Docker Publishing**:
+   Pushing the `v*` tag automatically triggers the `.github/workflows/docker-publish.yml` GitHub Actions workflow, building multi-architecture Docker container images (`linux/amd64`, `linux/arm64`) and publishing them to the GitHub Container Registry (`ghcr.io/thehavays/nas2cloud-smartcam:<version>`).

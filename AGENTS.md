@@ -81,9 +81,9 @@ For complete version control guidelines, see [.agents/GIT_WORKFLOW.md](./.agents
    - `dev`: Primary integration branch. All feature branches (`feat/*`, `fix/*`, `chore/*`) target `dev`.
    - `main`: Production branch. Updated only via Release Pull Requests from `dev`.
 3. **MANDATORY User Confirmation Gates**:
-   - **Gate 1**: ALWAYS ask user approval before opening a PR (`gh pr create`).
-   - **Gate 2**: ALWAYS ask user approval before merging a PR (`gh pr merge`).
-4. **GITHUB_TOKEN Conflict Rule**: Always prefix GitHub CLI commands with `GITHUB_TOKEN=` (e.g. `GITHUB_TOKEN= gh issue create ...`).
+   - **Gate 1**: ALWAYS ask user approval before opening a PR (`create_pull_request`).
+   - **Gate 2**: ALWAYS ask user approval before merging a PR (`merge_pull_request`).
+4. **GitHub MCP Server Integration**: All GitHub actions (Issues, PRs, comments) are executed via **GitHub MCP Server** tools (`issue_write`, `create_pull_request`, `merge_pull_request`), avoiding CLI token conflicts.
 5. **Issue Linking**:
    - On `dev` PRs: use `ref #<issue_number>` (NEVER use `closes #...`).
    - On `main` Release PRs: use `closes #<issue_number>` to close issues upon production release.
