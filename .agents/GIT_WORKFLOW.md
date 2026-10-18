@@ -6,46 +6,39 @@
 
 * **GITHUB_USERNAME**: `thehavays`
 * **GITHUB_PROJECT_NAME**: `Nas2Cloud SmartCam`
-
----
-
-This document details the version control and GitHub conventions used in this project. Follow these guidelines to maintain a clean history and avoid build or deployment issues.
+* **REPOSITORY**: `nas2cloud-smartcam`
+* **REMOTE_URL**: `https://github.com/thehavays/nas2cloud-smartcam.git`
+* **INTEGRATION_BRANCH**: `dev`
+* **PRODUCTION_BRANCH**: `main`
 
 ---
 
 ## 🌿 Branching Strategy
 
-We use a standard branching structure with `dev` as the main integration branch. Both `main` and `dev` are **protected branches**:
+We use a standard two-tier branching structure with `dev` as the main integration branch. Both `main` and `dev` are **protected branches**:
 
 1. **`dev` (Development Branch)**:
-   * This is the default branch for active development.
-   * All feature branches, bug fixes, and chores should be branched from `dev` and merged back into `dev`.
+   * The default branch for active development.
+   * All feature branches, bug fixes, and chores branch from `dev` and merge back into `dev`.
 2. **`main` (Production Branch)**:
    * Holds the stable production release code.
-   * Periodically, `dev` is merged into `main` via a Pull Request.
+   * Periodically, `dev` is merged into `main` via a Release Pull Request.
 
 ### 🛡️ Branch Protection Rules
 
-Direct pushes to `main` and `dev` are strictly forbidden. Changes can only be merged via Pull Requests.
-
+* **Direct Pushes**: Direct pushes to `main` and `dev` are strictly forbidden. All changes must be delivered via Pull Requests.
 * **Review Requirements**: All PRs must have at least **one approved review** from a reviewer before they can be merged.
-* **Admin Override**: A PR can be merged without reviews *only* if merged by an administrator (e.g., using the `--admin` bypass flag in the GitHub CLI).
+* **Admin Override**: A PR can be merged without reviews *only* if merged by an administrator (e.g., using `--admin` flag in the GitHub CLI).
 
-### Working on a Feature, Bug Fix, or Change
+### 🛑 User Confirmation Gates (MANDATORY)
 
-* **Issue Pre-requisite**: Before committing any changes, verify if a GitHub Issue exists for the work. **If an issue does NOT exist, create one first**:
-
-  ```bash
-  GITHUB_TOKEN= gh issue create --assignee <GITHUB_USERNAME> --project <GITHUB_PROJECT_NAME> --title "<summary>" --body "<description>"
-  ```
-
-* **Branch Creation**: Create and switch to a branch linked to the issue:
-
-  ```bash
-  git checkout dev
-  git pull
-  GITHUB_TOKEN= gh issue develop <issue_number> --base dev --checkout
-  ```
+To prevent unwanted changes, maintain strict quality control, and ensure implementation matches user expectations:
+1. **Gate 1 — Before Opening a Pull Request**:
+   * The agent **MUST explicitly ask the user for confirmation** before running `gh pr create` or using GitHub MCP `create_pull_request`.
+   * **Rationale**: The user may request additional modifications, want to review the diff/files first, or adjust scope before a PR is opened.
+2. **Gate 2 — Before Merging a Pull Request**:
+   * Even when CI checks succeed with green status, the agent **MUST explicitly ask the user for confirmation** before running `gh pr merge` or using GitHub MCP `merge_pull_request`.
+   * **Rationale**: The user must review the build/preview behavior and give explicit approval before integrating changes into `dev` or releasing to `main`.
 
 ---
 
@@ -60,27 +53,38 @@ There is a conflict with the `GITHUB_TOKEN` environment variable in the shell en
 
 ---
 
-## 💬 Issue & PR Creation Conventions
+## 📋 Issue Pre-requisite & Closure Policy (MANDATORY)
 
-* **Assignee & Project Rules**: When creating a new Issue or Pull Request, **always** assign it to `GITHUB_USERNAME` and link it to `GITHUB_PROJECT_NAME`:
-  * **Creating an Issue**:
+Before committing changes or starting work:
+1. **Verify Existing Issues**: Check if an open GitHub Issue exists for the work:
+   ```bash
+   GITHUB_TOKEN= gh issue list --assignee thehavays
+   ```
+2. **Create Issue First**: If no issue exists, create one and assign it:
+   ```bash
+   GITHUB_TOKEN= gh issue create --assignee thehavays --title "<summary>" --body "<description>"
+   ```
+3. **Branch Creation**: Create and switch to a branch linked to the issue:
+   ```bash
+   git checkout dev
+   git pull origin dev
+   GITHUB_TOKEN= gh issue develop <issue_number> --base dev --checkout
+   ```
+4. **Issue Linking Policy**:
+   * **Feature PRs (targeting `dev`)**: Use `ref #<issue_number>` in PR description. **DO NOT** use `closes #...` on `dev` PRs.
+   * **Release PRs (targeting `main`)**: Use `closes #<issue_number>` in the Release PR description so issues are closed ONLY when promoted to production.
 
-    ```bash
-    GITHUB_TOKEN= gh issue create --assignee <GITHUB_USERNAME> --project <GITHUB_PROJECT_NAME> --title "..." --body "..."
-    ```
+---
 
-  * **Creating a PR**:
+## 💬 Commit & PR Conventions
 
-    ```bash
-    GITHUB_TOKEN= gh pr create --assignee <GITHUB_USERNAME> --project <GITHUB_PROJECT_NAME> --base dev --title "..." --body "..."
-    ```
-
-* **Commit messages**: Use semantic prefix naming conventions:
-  * `feat: ...` for new features (e.g. `feat: support pre-configuring Google Cloud OAuth credentials via env (closes #23)`).
+* **Commit messages**: Use Conventional Commits naming conventions:
+  * `feat: ...` for new features (e.g. `feat: support pre-configuring Google Cloud OAuth credentials via env (ref #23)`).
   * `fix: ...` for bug fixes.
-  * `chore: ...` for structural or auxiliary updates.
-* **PR Target**: Always direct your pull request to the `dev` branch.
-* **Syncing to Main**: Once features are stable in `dev`, open a PR from `dev` to `main` (`GITHUB_TOKEN= gh pr create --assignee <GITHUB_USERNAME> --project <GITHUB_PROJECT_NAME> --base main --head dev`).
+  * `chore: ...` for structural, dependency, or auxiliary updates.
+  * `docs: ...` for documentation updates.
+* **PR Target**: Always direct feature pull requests to the `dev` branch.
+* **Pre-flight Check**: Always run script syntax checks (`sh -n sync.sh motion_clip.sh entrypoint.sh`) and Docker build check before requesting PR approval.
 
 ---
 
@@ -89,54 +93,19 @@ There is a conflict with the `GITHUB_TOKEN` environment variable in the shell en
 When asked to create a tag/release:
 
 1. **Checkout the main branch** and pull the latest changes:
-
    ```bash
    git checkout main
-   git pull
+   git pull origin main
    ```
-
 2. **Create the tag locally** (use semantic versioning, e.g., `v1.0.1`):
-
    ```bash
    git tag -a v<version> -m "Release v<version>"
    ```
-
 3. **Push the tag to GitHub**:
-
    ```bash
    git push origin v<version>
    ```
-
 4. **Create a GitHub release** from the tag:
-
    ```bash
    GITHUB_TOKEN= gh release create v<version> --title "Release v<version>" --generate-notes
    ```
-
----
-
-## 💡 Git & GitHub Best Practices
-
-1. **Keep Feature Branches Up to Date**:
-   * Regularly pull updates from `dev` into your feature branch before creating a PR to resolve merge conflicts early:
-
-     ```bash
-     git fetch origin
-     git rebase origin/dev
-     ```
-
-2. **Automatic Issue Linking**:
-   * Always include closing keywords in commit messages or PR descriptions (e.g., `closes #23`, `resolves #45`). This links the PR to the issue on GitHub and automatically closes the issue when merged.
-3. **Branch Hygiene & Cleanup**:
-   * Clean up merged feature branches locally and remotely to avoid repository bloat:
-
-     ```bash
-     GITHUB_TOKEN= gh pr merge <pr_number> --merge -d
-     ```
-
-4. **Draft Pull Requests for Early Feedback**:
-   * If a feature is a work in progress and you want early code review or automated testing, create a draft PR:
-
-     ```bash
-     GITHUB_TOKEN= gh pr create --draft --base dev
-     ```
