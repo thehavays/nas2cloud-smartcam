@@ -24,7 +24,7 @@ This document is the primary onboarding and operational guide for AI agents and 
 nas2cloud-smartcam/
 ├── .agents/                 # AI agent guidelines and architecture docs
 │   ├── AGENTS.md            # Detailed subproject onboarding guide
-│   ├── GIT_WORKFLOW.md      # Protected branching, gates & GITHUB_TOKEN rules
+│   ├── GIT_WORKFLOW.md      # Protected branching, gates & GitHub MCP standards
 │   ├── CI.md                # Continuous Integration verification gates
 │   └── CD.md                # Continuous Deployment & GHCR image publishing
 ├── .github/
