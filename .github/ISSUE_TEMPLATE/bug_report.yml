@@ -1,0 +1,48 @@
+name: 🐛 Bug Report
+description: Report an issue, sync error, or camera connectivity problem.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear and concise description of what happened.
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System & Host Environment
+      options:
+        - macOS (Apple Silicon ARM64)
+        - macOS (Intel x86_64)
+        - Linux (Ubuntu, Debian, etc.)
+        - Windows 10/11 (Docker Desktop)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: camera_info
+    attributes:
+      label: Camera Model & Firmware
+      description: e.g. Xiaomi C300, TP-Link Tapo C200, Reolink E1 Pro
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Start container with 'docker compose ...'
+        2. Point camera NAS to IP: '...'
+        3. See error in logs '...'
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Container Logs
+      description: Output from `docker logs nas2cloud-smartcam` or `docker exec nas2cloud-smartcam smbstatus`
+      render: shell
+    validations:
+      required: false

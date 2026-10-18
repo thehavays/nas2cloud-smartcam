@@ -1,0 +1,21 @@
+name: ✨ Feature Request
+description: Propose a new feature, camera model support, or improvement for Nas2Cloud SmartCam.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: "### Suggest a feature or improvement for Nas2Cloud SmartCam"
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Context
+      description: What camera brand, storage limitation, or feature gap does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution & Scope
+      description: How should this feature work in Docker, Samba, motion detection, or cloud sync?
+    validations:
+      required: true
