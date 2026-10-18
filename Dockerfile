@@ -1,12 +1,19 @@
 FROM dperson/samba
 
-# Install required packages (Node.js, npm, curl, unzip, ffmpeg)
-RUN apk add --no-cache nodejs npm curl unzip ffmpeg
+# Install required packages (Node.js, npm, curl, unzip, ffmpeg, tzdata)
+RUN apk add --no-cache nodejs npm curl unzip ffmpeg tzdata
 
-# Install Rclone
-RUN curl -O https://downloads.rclone.org/rclone-current-linux-amd64.zip && \
-    unzip rclone-current-linux-amd64.zip && \
-    cd rclone-*-linux-amd64 && \
+# Install Rclone (Multi-arch support: amd64 / arm64 / arm-v7)
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  RCLONE_ARCH="amd64" ;; \
+        aarch64) RCLONE_ARCH="arm64" ;; \
+        armv7l)  RCLONE_ARCH="arm-v7" ;; \
+        *)       RCLONE_ARCH="amd64" ;; \
+    esac && \
+    curl -O "https://downloads.rclone.org/rclone-current-linux-${RCLONE_ARCH}.zip" && \
+    unzip "rclone-current-linux-${RCLONE_ARCH}.zip" && \
+    cd rclone-*-linux-${RCLONE_ARCH} && \
     cp rclone /usr/bin/ && \
     chown root:root /usr/bin/rclone && \
     chmod 755 /usr/bin/rclone && \

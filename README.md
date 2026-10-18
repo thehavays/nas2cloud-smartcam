@@ -15,24 +15,51 @@ To make setup as easy as possible, a web interface is included to handle Google 
 
 ---
 
-## 1. Start the Environment (Cross-Platform: Linux, Windows)
+## 1. Start the Environment (Cross-Platform: Linux, Windows, macOS)
 
 Depending on your Operating System, use the appropriate configuration file:
 
+### macOS (Native File Sharing + Cloud Sync & Motion Detection)
+Because Docker Desktop on macOS runs inside a LinuxKit virtual machine behind NAT, camera apps (such as Xiaomi / Mi Home) cannot discover Docker's Samba broadcast directly over Wi-Fi. The recommended and tested solution is to use macOS native **File Sharing** for camera ingestion, while `nas2cloud` handles motion detection, clip cutting, and Google Drive synchronization:
+
+1. **Enable macOS Native File Sharing**:
+   - Go to **System Settings > General > Sharing** and turn on **File Sharing**.
+   - Click the **(i)** info icon, add a dedicated storage folder (e.g. `cam_storage` on your Desktop or external drive).
+   - Click **Options...**, enable **Share files and folders using SMB**, and check your user account under **Windows File Sharing** (NTLM authentication).
+2. **Configure and Run the Container**:
+   - Create or edit `.env` in the repository root and set `DATA_PATH` to your shared folder:
+     ```env
+     DATA_PATH=/Users/yourusername/Desktop/cam_storage
+     ```
+   - Start the container using [docker-compose-mac.yml](docker-compose-mac.yml):
+     ```bash
+     docker compose -f docker-compose-mac.yml up -d
+     ```
+3. **Connect Your Camera**:
+   - In your camera app (e.g. Mi Home -> Camera Settings -> Storage Management -> NAS Network Storage), your Mac will appear automatically in the discovery list.
+   - Enter your Mac username and password, select the shared folder, and the camera will begin streaming video directly.
+
+> 💡 **Tip for macOS:**
+> * **Preventing Sleep:** If using your Mac as an always-on NVR server, configure your Mac not to sleep when the display is off (under **System Settings > Displays / Lock Screen** or by running `caffeinate -d` in a background terminal).
+
 ### Windows (requires explicit port exposure)
-Use [docker-compose-windows.yml](file:///home/thehavays/Desktop/projects/nas2cloud-smartcam/docker-compose-windows.yml) and run:
+Use [docker-compose-windows.yml](docker-compose-windows.yml) and run:
 ```bash
 docker compose -f docker-compose-windows.yml up -d
 ```
 
+> 💡 **Tip for Windows:**
+> * Make sure port `445` is not being used by the native Windows "Server" (SMB) service.
+> * You can customize the storage directory by setting `DATA_PATH` in `.env` (e.g. `DATA_PATH=D:\cam_storage`).
+
 ### Linux (uses host networking for automatic discovery)
-Use [docker-compose-linux.yml](file:///home/thehavays/Desktop/projects/nas2cloud-smartcam/docker-compose-linux.yml) and run:
+Use [docker-compose-linux.yml](docker-compose-linux.yml) and run:
 ```bash
 docker compose -f docker-compose-linux.yml up -d
 ```
 
-> 💡 **Tip:** 
-> * **On Windows:** Make sure port `445` is not being used by the native Windows "Server" (SMB) service.
+> 💡 **Tip for Linux:**
+> * You can customize the storage directory by setting `DATA_PATH` in `.env` (e.g. `DATA_PATH=/mnt/storage`).
 
 ---
 
@@ -119,6 +146,8 @@ Because the active file is snapshotted every 10 minutes, you'll see motion clips
 ## 🔧 Environment Variables Reference
 | Variable | Default | Description |
 | :--- | :--- | :--- |
+| `DATA_PATH` | `./data` | Host directory path where camera recordings are saved and read from. |
+| `TZ` | Host time (`/etc/localtime`) | Timezone identifier (e.g. `Europe/Istanbul`, `America/New_York`, `UTC`). |
 | `SYNC_INTERVAL` | `3600` | Sync frequency in seconds (default: 1 hour). |
 | `LOCAL_RETENTION_DAYS` | `7` | Days to keep video files on local PC disk before auto-delete. |
 | `REMOTE_RETENTION_DAYS` | `30` | Days to keep video files on Google Drive before auto-delete. |
