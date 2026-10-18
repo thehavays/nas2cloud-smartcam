@@ -6,6 +6,7 @@ services:
     environment:
       - USERID=1000
       - GROUPID=1000
+      - TZ
       - SYNC_INTERVAL=900
       - LOCAL_RETENTION_DAYS=7
       - REMOTE_RETENTION_DAYS=30
@@ -19,7 +20,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - ./data:/mnt/data
+      - ${DATA_PATH:-./data}:/mnt/data
       - ./rclone:/app/rclone
     command: '-u "camera;camera123" -s "cam_storage;/mnt/data;yes;no;no;camera;camera;camera" -n -p -S -g "ntlm auth = ntlmv1-permitted" -g "server min protocol = NT1" -g "client min protocol = NT1" -g "netbios name = camnas"'
     restart: unless-stopped
