@@ -28,16 +28,16 @@ We use a standard two-tier branching structure with `dev` as the main integratio
 
 * **Direct Pushes**: Direct pushes to `main` and `dev` are strictly forbidden. All changes must be delivered via Pull Requests.
 * **Review Requirements**: All PRs must have at least **one approved review** from a reviewer before they can be merged.
-* **Admin Override**: A PR can be merged without reviews *only* if merged by an administrator (e.g., using `--admin` flag in the GitHub CLI).
+* **Admin Override**: A PR can be merged without reviews *only* if merged by an administrator or repository owner.
 
 ### 🛑 User Confirmation Gates (MANDATORY)
 
 To prevent unwanted changes, maintain strict quality control, and ensure implementation matches user expectations:
 1. **Gate 1 — Before Opening a Pull Request**:
-   * The agent **MUST explicitly ask the user for confirmation** before running `gh pr create` or using GitHub MCP `create_pull_request`.
+   * The agent **MUST explicitly ask the user for confirmation** before using GitHub MCP `create_pull_request`.
    * **Rationale**: The user may request additional modifications, want to review the diff/files first, or adjust scope before a PR is opened.
 2. **Gate 2 — Before Merging a Pull Request**:
-   * Even when CI checks succeed with green status, the agent **MUST explicitly ask the user for confirmation** before running `gh pr merge` or using GitHub MCP `merge_pull_request`.
+   * Even when CI checks succeed with green status, the agent **MUST explicitly ask the user for confirmation** before using GitHub MCP `merge_pull_request`.
    * **Rationale**: The user must review the build/preview behavior and give explicit approval before integrating changes into `dev` or releasing to `main`.
 
 ---
